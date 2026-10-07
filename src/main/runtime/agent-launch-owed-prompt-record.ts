@@ -11,10 +11,10 @@
 
 import {
   agentSessionOperationKey,
-  type AgentLaunchOwedPrompt,
   type AgentSessionOperationOutcome,
   type AgentSessionOperationRow
 } from '../../shared/agent-session-operation-ledger'
+import type { AgentLaunchOwedPrompt } from '../../shared/agent-launch-owed-prompt'
 import type { TuiAgent } from '../../shared/tui-agent'
 import { isTuiAgent } from '../../shared/tui-agent-config'
 import type { AgentSessionRecordStore } from './agent-session-record-store'

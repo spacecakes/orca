@@ -14,6 +14,7 @@ import { toast } from 'sonner'
 import { translate } from '@/i18n/i18n'
 import { sourceControlActionRecipeMatchesTarget } from './source-control-action-recipe-match'
 import { resolveSourceControlAgentSaveTarget } from './source-control-agent-action-dialog-support'
+import type { AgentLaunchFollowUp } from '../../../../shared/agent-launch-follow-up'
 
 type RunSourceControlAgentActionStartArgs = {
   selectedAgent: TuiAgent
@@ -53,6 +54,8 @@ type RunSourceControlAgentActionStartArgs = {
   /** Fires when a launch that already reported onLaunchAccepted failed to deliver its prompt. */
   onLaunchAborted?: () => void
   onLaunched?: () => void
+  /** Recorded on a host launch so a reload mid-launch still runs `onLaunched`'s host writes once. */
+  durableFollowUp?: AgentLaunchFollowUp
   onClose: () => void
 }
 
@@ -77,6 +80,7 @@ export async function runSourceControlAgentActionStart({
   onLaunchAccepted,
   onLaunchAborted,
   onLaunched,
+  durableFollowUp,
   onClose
 }: RunSourceControlAgentActionStartArgs): Promise<boolean> {
   let launched = false
@@ -111,7 +115,8 @@ export async function runSourceControlAgentActionStart({
       agentArgs: launchAgentArgs,
       promptDelivery,
       launchPlatform,
-      launchSource
+      launchSource,
+      ...(durableFollowUp ? { durableFollowUp } : {})
     })
     launched = Boolean(result)
     if (result?.surface.kind === 'local-terminal') {

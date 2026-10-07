@@ -33,6 +33,10 @@ import { rpcCallerOperationKey } from '../rpc-caller-identity'
 import type { AgentLaunchParams } from './agent-launch-schemas'
 import type { TuiAgent } from '../../../../shared/tui-agent'
 import {
+  agentLaunchFollowUpFits,
+  type AgentLaunchFollowUp
+} from '../../../../shared/agent-launch-follow-up'
+import {
   beginOwedLaunchPromptWrite,
   recordLaunchOutcome,
   type OwedLaunchPromptWriteStart
@@ -216,8 +220,16 @@ export async function admitAgentLaunchOperation(
   const callerKey = agentLaunchOperationCallerKey(context)
   // The ledger alone: admitting a terminal launch has no use for the chat host.
   const store = await context.runtime.openAgentSessionRecordStore()
+  const launchFollowUp = recordableFollowUp(params)
   const { decision: admitted, claim } = await store.admitAndClaimOperation(
-    { callerKey, operationId, fingerprint, now, ...(ownedPane ? { ownedPane } : {}) },
+    {
+      callerKey,
+      operationId,
+      fingerprint,
+      now,
+      ...(ownedPane ? { ownedPane } : {}),
+      ...(launchFollowUp ? { launchFollowUp } : {})
+    },
     // A fresh row, or a replayed one no one has answered yet, leaves the right to run open.
     (decision) =>
       decision.decision === 'admit' ||
@@ -273,6 +285,20 @@ export async function admitAgentLaunchOperation(
     beginPromptWrite: () =>
       beginOwedLaunchPromptWrite(store, { callerKey, operationId }, Date.now())
   }
+}
+
+/** A follow-up over the cap is not recorded: it runs live, as before, and never fails the launch. */
+function recordableFollowUp(params: AgentLaunchParams): AgentLaunchFollowUp | undefined {
+  if (!params.followUp) {
+    return undefined
+  }
+  if (!agentLaunchFollowUpFits(params.followUp)) {
+    console.warn(
+      `[agent-launch] a ${params.followUp.kind} follow-up is over the record's size cap; it runs live only`
+    )
+    return undefined
+  }
+  return params.followUp
 }
 
 /** The text a terminal's first write still owes: a submit nothing has delivered yet, which the

@@ -21,6 +21,7 @@ import { translate } from '@/i18n/i18n'
 import type { ChecksPanelReview } from '../checks-panel-review'
 import type { ChecksPanelHostedReviewModifierDestination } from '../checks-panel-hosted-review-click-routing'
 import type { ChecksPanelActiveContentModel } from './active-content-props'
+import { reviewCommentsResolutionFollowUp } from '@/lib/agent-launch-follow-ups'
 type ReviewHeaderComponentProps = {
   review: ChecksPanelReview
   isRefreshing: boolean
@@ -331,6 +332,15 @@ export function ChecksPanelActiveContent({
         // Why: claims the ack payload when the tab exists; the host writes still wait for delivery.
         onLaunchAccepted={handleLaunchAccepted}
         onLaunchAborted={handleLaunchAborted}
+        // Why: resolving threads and posting replies must survive a reload mid-launch, once.
+        {...(agentComposerState?.actionId === 'resolveComments' &&
+        agentComposerState.commentResolution
+          ? {
+              durableFollowUp: reviewCommentsResolutionFollowUp(
+                agentComposerState.commentResolution
+              )
+            }
+          : {})}
         onLaunched={() => {
           // Why: prompt delivery succeeded — the only point at which host replies/resolves may run.
           consumeClaimedCommentResolutionAfterDeliveryRef.current()

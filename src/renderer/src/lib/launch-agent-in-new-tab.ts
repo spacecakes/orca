@@ -20,6 +20,7 @@ import {
 } from '../../../shared/tui-agent-launch-defaults'
 import { TUI_AGENT_CONFIG } from '../../../shared/tui-agent-config'
 import type { TuiAgent } from '../../../shared/tui-agent'
+import type { AgentLaunchFollowUp } from '../../../shared/agent-launch-follow-up'
 import type { LaunchSource } from '../../../shared/telemetry-events'
 import { resolveAgentLaunchExecutionContext } from '@/lib/launch-agent-execution-context'
 import { resolveInitialNativeChatSessionOptions } from '@/components/native-chat/native-chat-launch-session-options'
@@ -69,6 +70,9 @@ export type LaunchAgentInNewTabArgs = LaunchAgentInNewTabRequest & {
    * terminal route, whose readiness signal the client watches itself.
    */
   onPromptDeliveryUnconfirmed?: () => void
+  /** What `onPromptDelivered` does, recorded on a host launch so a reload mid-launch still runs it
+   *  once (`agent-launch-follow-ups`). */
+  durableFollowUp?: AgentLaunchFollowUp
   /** Keep terminal launches in a floating workspace from taking global selection. */
   activate?: boolean
   /** The launch seeds a workspace being opened, so its PTY spawn must not reshuffle Recent. */
@@ -126,6 +130,7 @@ function launchAgentInNewTabInternal(args: LaunchAgentInNewTabArgs): LaunchAgent
     launchPlatform,
     onPromptDelivered,
     onPromptDeliveryUnconfirmed,
+    durableFollowUp,
     pendingActivationSpawn,
     beforeSurfaceOpen,
     activate
@@ -265,6 +270,7 @@ function launchAgentInNewTabInternal(args: LaunchAgentInNewTabArgs): LaunchAgent
       ...(pendingActivationSpawn ? { pendingActivationSpawn: true } : {}),
       ...(initialViewModeProps.viewMode ? { viewMode: initialViewModeProps.viewMode } : {}),
       pasteContent: pasteDraftAfterLaunch,
+      ...(durableFollowUp ? { durableFollowUp } : {}),
       ...(onPromptDelivered ? { onPromptDelivered } : {}),
       ...(onPromptDeliveryUnconfirmed ? { onPromptDeliveryUnconfirmed } : {})
     })
